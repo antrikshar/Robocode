@@ -2,6 +2,8 @@ package antriksh;
 
 import robocode.*;
 
+import java.awt.*;
+
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 /*
@@ -20,6 +22,9 @@ public class antriksh extends AdvancedRobot {
     int counter = 0; // counts whether bullet should be shot or not after a long miss streak
 
     public void run() {
+
+        // set colors
+        setAllColors(Color.pink);
 
         // get field width and height
         fieldWidth = getBattleFieldWidth();
@@ -45,7 +50,7 @@ public class antriksh extends AdvancedRobot {
         while (true) {
 
             // if the robot was close a wall, check if it has moved away yet and set the variable to false
-            if (getX() > 50 && getY() > 50 && getBattleFieldWidth() - getX() > 50 && getBattleFieldHeight() - getY() > 50 && closeToWall == true) {
+            if (getX() > 50 && getY() > 50 && getBattleFieldWidth() - getX() > 50 && getBattleFieldHeight() - getY() > 50 && closeToWall) {
                 closeToWall = false;
             }
 
@@ -53,7 +58,7 @@ public class antriksh extends AdvancedRobot {
             if (getX() <= 50 || getY() <= 50 || fieldWidth - getX() <= 50 || fieldHeight - getY() <= 50 ) {
                 // if hasn't noticed yet, then move robot away and change the value of the variable to true
                 // if has noticed yet, then do nothing
-                if (closeToWall == false){
+                if (!closeToWall){
                     bounce();
                     closeToWall = true;
                 }
@@ -88,48 +93,58 @@ public class antriksh extends AdvancedRobot {
         setTurnGunRight(bearingFromGun); // turns gun to keep aim at enemy
         setTurnRadarRight(bearingFromRadar); // turns the radar to keeps track of the enemy
 
-        // until 6 out of 8 enemy are alive fire with max power bullets
-        // check gun heat and energy to not kill yourself
-        if (getOthers() / (double) others > 0.75 && getGunHeat() == 0 && getEnergy() > 15) {
-            fire(3);
-            System.out.println(3);
-        }
-        // until 5 out of 8 enemy are alive fire with power of 2.5
-        else if (getOthers() / (double) others > 0.625 && getGunHeat() == 0 && getEnergy() > 15) {
-            fire(2.5);
-            System.out.println(2.5);
-        }
-        // until 4 out of 8 enemy are alive fire with power of 2.25
-        else if (getOthers() / (double) others > 0.5 && getGunHeat() == 0 && getEnergy() > 15) {
-            fire(2.25);
-            System.out.println(2.25);
+        // if the missed bullet steak is lower than 10
+        if (missedBullets <= 10) {
 
-        } else if (event.getDistance() > 200 && getGunHeat() == 0 && getEnergy() > 5) {
+            // until 6 out of 8 enemy are alive fire with max power bullets
+            // check gun heat and energy to not kill yourself
+            if (getOthers() / (double) others > 0.75 && getGunHeat() == 0 && getEnergy() > 15) {
+                fire(3);
+            }
+            // until 5 out of 8 enemy are alive fire with power of 2.5
+            else if (getOthers() / (double) others > 0.625 && getGunHeat() == 0 && getEnergy() > 15) {
+                fire(2.5);
+            }
+            // until 4 out of 8 enemy are alive fire with power of 2.25
+            else if (getOthers() / (double) others > 0.5 && getGunHeat() == 0 && getEnergy() > 15) {
+                fire(2.25);
+
+            }
+            // setting conditions to select the power of the bullet
+            else if (event.getDistance() > 200 && getGunHeat() == 0 && getEnergy() > 5) {
+                fire(1);
+
+            } else if (event.getDistance() > 150 && getGunHeat() == 0 && getEnergy() > 15) {
+                fire(1.5);
+
+            } else if (event.getDistance() > 100 && getGunHeat() == 0 && getEnergy() > 15) {
+                fire(2);
+
+            } else if (event.getDistance() > 50 && getGunHeat() == 0 && getEnergy() > 10) {
+                fire(2.5);
+
+            } else if (event.getDistance() < 50 && getGunHeat() == 0) {
+                if (event.getEnergy() < 3.1) {
+                    fire(1);
+                } else {
+                    fire(3);
+                }
+            } else {
+                // else just keep track the enemy
+                setTurnGunRight(bearingFromGun);
+                setTurnRadarRight(bearingFromRadar);
+            }
+        }
+        // when the missed bulled steak is above 10, then fire only every third bullet
+        else if (counter %3 == 0) {
             fire(1);
-            System.out.println(1);
-
-        } else if (event.getDistance() > 150 && getGunHeat() == 0 && getEnergy() > 15) {
-            fire(1.5);
-            System.out.println(1.5);
-
-        } else if (event.getDistance() > 100 && getGunHeat() == 0 && getEnergy() > 15) {
-            fire(2);
-            System.out.println(2);
-
-        } else if (event.getDistance() > 50 && getGunHeat() == 0 && getEnergy() > 10) {
-            fire(2.5);
-            System.out.println(2.5);
-
-        } else if (event.getDistance() < 50 && getGunHeat() == 0 && getEnergy() > 5) {
-            fire(3);
-            System.out.println(3);
+            counter++;
         } else {
-            // else just keep track the enemy
+            // else just keep track the enemy and raise the counter
             setTurnGunRight(bearingFromGun);
             setTurnRadarRight(bearingFromRadar);
-            System.out.println("no fire");
+            counter++;
         }
-
     }
 
     // in case the robot still touches the wall
@@ -147,9 +162,14 @@ public class antriksh extends AdvancedRobot {
         }
     }
 
-
     public void onHitByBullet(HitByBulletEvent event) {
-        // TODO: take action to dodge bullets
+        // if robot gets hit it does sharper turns
+        if (forwardMovement){
+            setTurnRight(normalRelativeAngleDegrees(event.getBearing() -20));
+        }
+        else {
+            setTurnRight(normalRelativeAngleDegrees(event.getBearing() + 20));
+        }
     }
 
 
@@ -158,7 +178,6 @@ public class antriksh extends AdvancedRobot {
         if (event.isMyFault()) {
             bounce();
         }
-        // TODO: if the robot hits us in our moving direction, then bounce - if it hits us from an other direction, just continue moving
     }
 
 
@@ -183,5 +202,6 @@ public class antriksh extends AdvancedRobot {
         }
     }
 
-    // TODO: predict the enemies movement to miss less bullets
+
+    // TODO: predict the enemies movement to get better aim and miss lesser bullets
 }
