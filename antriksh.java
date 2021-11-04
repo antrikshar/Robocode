@@ -5,7 +5,7 @@ import robocode.*;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 /*
- * antriksh 1.0
+ * antriksh 2.0
  *
  * By Antriksh Arora
  */
@@ -15,6 +15,7 @@ public class antriksh extends AdvancedRobot {
     double fieldHeight; // battlefield height
     boolean forwardMovement; // is true when robot is moving forward - when ahead is called, is false when back is called
     boolean closeToWall; // is true when robot is closer than 50px to any wall
+    int others; // saves the number enemies at beginning of the fight
     int missedBullets = 0; // counts the streak in which bullets don't hit any enemy
     int counter = 0; // counts whether bullet should be shot or not after a long miss streak
 
@@ -23,6 +24,7 @@ public class antriksh extends AdvancedRobot {
         // get field width and height
         fieldWidth = getBattleFieldWidth();
         fieldHeight= getBattleFieldHeight();
+        others = getOthers();
 
         // allow every part of the robot move independent of the other parts
         setAdjustGunForRobotTurn(true);
@@ -83,20 +85,49 @@ public class antriksh extends AdvancedRobot {
             setTurnRight(normalRelativeAngleDegrees(event.getBearing() + 100));
         }
 
-        // fire if the enemy is close enough
-        if (Math.abs(bearingFromGun) <= 3) {
-            setTurnGunRight(bearingFromGun); // turns gun to keep aim at the enemy
-            setTurnRadarRight(bearingFromRadar); // turns the radar to keep track of the enemy
+        setTurnGunRight(bearingFromGun); // turns gun to keep aim at enemy
+        setTurnRadarRight(bearingFromRadar); // turns the radar to keeps track of the enemy
 
-            // check gun heat and energy to not kill himself
-            if (getGunHeat() == 0 && getEnergy() > 15) {
-                // the closer the enemy, the more powerful the bullet
-                fire(Math.min(3 - Math.abs(bearingFromGun) / 2 - event.getDistance() / 250, getEnergy() - .1));
-            }
+        // until 6 out of 8 enemy are alive fire with max power bullets
+        // check gun heat and energy to not kill yourself
+        if (getOthers() / (double) others > 0.75 && getGunHeat() == 0 && getEnergy() > 15) {
+            fire(3);
+            System.out.println(3);
+        }
+        // until 5 out of 8 enemy are alive fire with power of 2.5
+        else if (getOthers() / (double) others > 0.625 && getGunHeat() == 0 && getEnergy() > 15) {
+            fire(2.5);
+            System.out.println(2.5);
+        }
+        // until 4 out of 8 enemy are alive fire with power of 2.25
+        else if (getOthers() / (double) others > 0.5 && getGunHeat() == 0 && getEnergy() > 15) {
+            fire(2.25);
+            System.out.println(2.25);
+
+        } else if (event.getDistance() > 200 && getGunHeat() == 0 && getEnergy() > 5) {
+            fire(1);
+            System.out.println(1);
+
+        } else if (event.getDistance() > 150 && getGunHeat() == 0 && getEnergy() > 15) {
+            fire(1.5);
+            System.out.println(1.5);
+
+        } else if (event.getDistance() > 100 && getGunHeat() == 0 && getEnergy() > 15) {
+            fire(2);
+            System.out.println(2);
+
+        } else if (event.getDistance() > 50 && getGunHeat() == 0 && getEnergy() > 10) {
+            fire(2.5);
+            System.out.println(2.5);
+
+        } else if (event.getDistance() < 50 && getGunHeat() == 0 && getEnergy() > 5) {
+            fire(3);
+            System.out.println(3);
         } else {
             // else just keep track the enemy
             setTurnGunRight(bearingFromGun);
             setTurnRadarRight(bearingFromRadar);
+            System.out.println("no fire");
         }
 
     }
